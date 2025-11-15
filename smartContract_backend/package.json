@@ -1,0 +1,32 @@
+{
+  "name": "edudao-nexus",
+  "version": "1.0.0",
+  "description": "EduDAO Nexus - AI + Blockchain Platform for Student Achievements",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "node": "hardhat node"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "dao",
+    "education",
+    "nft",
+    "sbt"
+  ],
+  "author": "EduDAO Nexus Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "hardhat": "^2.19.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
+
