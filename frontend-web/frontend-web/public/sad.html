@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng Luồng Dữ Liệu EduDAO</title>
+    <!-- Tải Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tùy chỉnh font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09; /* Màu nền tối (stone-950) */
+            color: #f5f5f4; /* Màu chữ sáng (stone-100) */
+        }
+
+        /* Lớp cơ bản cho các node trong sơ đồ */
+        .node {
+            transition: all 0.5s ease-in-out;
+            border: 1px solid #44403c; /* stone-700 */
+        }
+
+        /* Trạng thái không hoạt động (mờ đi) */
+        .node-inactive {
+            opacity: 0.3;
+            background-color: #292524; /* stone-800 */
+        }
+
+        /* Trạng thái đang hoạt động (sáng lên) */
+        .node-active {
+            opacity: 1;
+            background-color: #1c1917; /* stone-900 */
+            transform: scale(1.05);
+            box-shadow: 0 0 20px 5px rgba(250, 204, 21, 0.4); /* shadow-amber-300/40 */
+            border-color: #fde047; /* amber-300 */
+        }
+
+        /* Mô tả chi tiết, mờ đi và xuất hiện */
+        .node .description {
+            transition: all 0.5s ease-in-out;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transform: translateY(-10px);
+        }
+
+        .node-active .description {
+            opacity: 1;
+            max-height: 200px; /* Đủ lớn để chứa text */
+            transform: translateY(0);
+            margin-top: 1rem; /* mt-4 */
+        }
+        
+        /* Gói dữ liệu mô phỏng */
+        .data-packet {
+            position: absolute;
+            width: 1rem; /* w-4 */
+            height: 1rem; /* h-4 */
+            background-color: #fde047; /* amber-300 */
+            border-radius: 9999px; /* rounded-full */
+            box-shadow: 0 0 15px 3px rgba(250, 204, 21, 0.6);
+            opacity: 0;
+            transition: all 2s ease-in-out;
+            z-index: 50;
+        }
+
+        /* Định nghĩa các chuyển động của gói dữ liệu */
+        
+        /* 1. Từ AI -> Smart Contract */
+        .animate-ai-to-contract {
+            opacity: 1;
+            transform: translateY(18.5rem); /* Di chuyển xuống node 2 */
+        }
+
+        /* 2. Từ Contract -> Tách ra 2 nhánh */
+        .animate-contract-to-split-left {
+            opacity: 1;
+            transform: translateY(14rem) translateX(-18rem); /* Di chuyển xuống và sang trái */
+        }
+        
+        .animate-contract-to-split-right {
+            opacity: 1;
+            transform: translateY(14rem) translateX(18rem); /* Di chuyển xuống và sang phải */
+        }
+
+        /* 3. Từ 2 nhánh -> Hội tụ tại DAO */
+        .animate-split-left-to-dao {
+            opacity: 1;
+            transform: translateY(14rem) translateX(18rem); /* Di chuyển xuống và sang phải (về trung tâm) */
+        }
+        
+        .animate-split-right-to-dao {
+            opacity: 1;
+            transform: translateY(14rem) translateX(-18rem); /* Di chuyển xuống và sang trái (về trung tâm) */
+        }
+        
+        /* Nút bấm */
+        .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #fde047; /* amber-300 */
+            color: #1c1917; /* stone-900 */
+        }
+        .btn-primary:hover {
+            background-color: #facc15; /* amber-400 */
+        }
+        .btn-secondary {
+            background-color: #44403c; /* stone-700 */
+            color: #f5f5f4; /* stone-100 */
+        }
+        .btn-secondary:hover {
+            background-color: #57534e; /* stone-600 */
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: translateY(0);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6 md:p-12 flex flex-col items-center">
+
+    <h1 class="text-3xl md:text-4xl font-bold text-center text-amber-300 mb-4">
+        Mô Phỏng Luồng Dữ Liệu EduDAO
+    </h1>
+    <p class="text-center text-stone-400 mb-10 max-w-2xl">
+        Đây là mô phỏng trực quan luồng dữ liệu sau khi AI xác thực thành công. Nhấn "Bắt đầu Demo" để xem hiệu ứng.
+    </p>
+
+    <!-- Bảng điều khiển nút bấm -->
+    <div class="flex gap-4 mb-12">
+        <button id="startButton" class="btn btn-primary font-bold py-2 px-6 rounded-lg">
+            Bắt đầu Demo
+        </button>
+        <button id="resetButton" class="btn btn-secondary font-bold py-2 px-6 rounded-lg opacity-50" disabled>
+            Thử lại
+        </button>
+    </div>
+
+    <!-- Vùng chứa Sơ đồ Workflow -->
+    <div class="relative w-full max-w-5xl mx-auto flex flex-col items-center" style="min-height: 1000px;">
+
+        <!-- CÁC GÓI DỮ LIỆU (ẨN BAN ĐẦU) -->
+        <!-- 1. AI -> Contract -->
+        <div id="packet-ai-contract" class="data-packet" style="top: 100px; left: 50%; margin-left: -0.5rem;"></div>
+        
+        <!-- 2. Contract -> Tách nhánh -->
+        <div id="packet-contract-split-left" class="data-packet" style="top: 385px; left: 50%; margin-left: -0.5rem;"></div>
+        <div id="packet-contract-split-right" class="data-packet" style="top: 385px; left: 50%; margin-left: -0.5rem;"></div>
+        
+        <!-- 3. Tách nhánh -> DAO -->
+        <div id="packet-split-left-dao" class="data-packet" style="top: 610px; left: calc(50% - 18rem); margin-left: -0.5rem;"></div>
+        <div id="packet-split-right-dao" class="data-packet" style="top: 610px; right: calc(50% - 18rem); margin-right: -0.5rem;"></div>
+
+        <!-- CÁC ĐƯỜNG KẾT NỐI (TĨNH) -->
+        <div class="absolute w-full h-full top-0 left-0 -z-10">
+            <!-- 1. Line: AI -> Contract -->
+            <div class="absolute w-0.5 h-32 bg-stone-700" style="top: 205px; left: 50%; transform: translateX(-50%);"></div>
+            
+            <!-- 2. Lines: Contract -> Split -->
+            <div class="absolute w-0.5 h-20 bg-stone-700" style="top: 405px; left: 50%; transform: translateX(-50%);"></div>
+            <div class="absolute h-0.5 w-72 bg-stone-700" style="top: 485px; left: calc(50% - 18rem); transform: translateX(-50%);"></div>
+            <div class="absolute h-0.5 w-72 bg-stone-700" style="top: 485px; right: calc(50% - 18rem); transform: translateX(50%);"></div>
+            <div class="absolute w-0.5 h-8 bg-stone-700" style="top: 485px; left: calc(50% - 18rem); transform: translateX(-50%);"></div>
+            <div class="absolute w-0.5 h-8 bg-stone-700" style="top: 485px; right: calc(50% - 18rem); transform: translateX(50%);"></div>
+
+            <!-- 3. Lines: Split -> DAO -->
+            <div class="absolute w-0.5 h-8 bg-stone-700" style="top: 710px; left: calc(50% - 18rem); transform: translateX(-50%);"></div>
+            <div class="absolute w-0.5 h-8 bg-stone-700" style="top: 710px; right: calc(50% - 18rem); transform: translateX(50%);"></div>
+            <div class="absolute h-0.5 w-72 bg-stone-700" style="top: 745px; left: calc(50% - 18rem); transform: translateX(-50%);"></div>
+            <div class="absolute h-0.5 w-72 bg-stone-700" style="top: 745px; right: calc(50% - 18rem); transform: translateX(50%);"></div>
+            <div class="absolute w-0.5 h-20 bg-stone-700" style="top: 745px; left: 50%; transform: translateX(-50%);"></div>
+        </div>
+
+        <!-- NODE 1: AI VERIFICATION -->
+        <div id="node-ai" class="node node-inactive w-full max-w-md p-6 rounded-xl shadow-lg text-center" style="top: 60px;">
+            <div class="flex items-center justify-center gap-4">
+                <svg class="w-8 h-8 text-amber-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.6_2.39-1.5_3.055a7.5 7.5 0 0 1-9 0c-.9-.665-1.5-1.787-1.5-3.055m0 0a7.5 7.5 0 1 0 12 0v-1.5a7.5 7.5 0 0 0-12 0v1.5Zm0 0a7.5 7.5 0 0 0 12 0v-1.5a7.5 7.5 0 0 0-12 0v1.5Z" />
+                </svg>
+                <h2 class="text-2xl font-semibold">1. AI Xác Thực Thành Công</h2>
+            </div>
+            <p class="description text-stone-400">
+                AI đã kiểm tra và xác nhận tính hợp lệ của đóng góp (ví dụ: điểm thi, dự án hoàn thành, giờ nghiên cứu).
+                <br><strong>Hành động:</strong> AI gửi tín hiệu "THÀNH CÔNG" cùng với dữ liệu đã được chuẩn hóa.
+            </p>
+        </div>
+
+        <!-- NODE 2: SMART CONTRACT -->
+        <div id="node-contract" class="node node-inactive w-full max-w-md p-6 rounded-xl shadow-lg text-center" style="top: 320px; position: absolute;">
+            <div class="flex items-center justify-center gap-4">
+                <svg class="w-8 h-8 text-amber-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a3.375 3.375 0 0 0-3.375 3.375v2.625m9.75 0v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a3.375 3.375 0 0 0-3.375 3.375v2.625m9.75 0v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a3.375 3.375 0 0 0-3.375 3.375v2.625M9.75 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a3.375 3.375 0 0 0-3.375 3.375v2.625m3.375 0v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a3.375 3.375 0 0 0-3.375 3.375v2.625m3.375 0v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5a3.375 3.375 0 0 0-3.375 3.375v2.625" />
+                </svg>
+                <h2 class="text-2xl font-semibold">2. Smart Contract Nhận Lệnh</h2>
+            </div>
+            <p class="description text-stone-400">
+                Dữ liệu được đẩy lên Smart Contract. Hợp đồng thông minh là một chương trình tự động chạy trên blockchain.
+                <br><strong>Hành động:</strong> Kích hoạt hàm "mint" (đúc token) dựa trên dữ liệu đầu vào.
+            </p>
+        </div>
+
+        <!-- Cụm Node Mint (Tách nhánh) -->
+        <div class="absolute w-full" style="top: 550px;">
+            <div class="flex justify-center gap-12">
+                <!-- NODE 3A: MINT LEARNTOKEN -->
+                <div id="node-token" class="node node-inactive w-full max-w-sm p-6 rounded-xl shadow-lg text-center">
+                    <div class="flex items-center justify-center gap-4">
+                        <svg class="w-8 h-8 text-amber-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818.879.879A3 3 0 1 0 12 15h0a3 3 0 1 0 3-3V6.372A3 3 0 0 0 12 3v1.5M7.5 12A2.25 2.25 0 0 1 5.25 9.75V9.75A2.25 2.25 0 0 1 7.5 7.5v0A2.25 2.25 0 0 1 9.75 9.75v0A2.25 2.25 0 0 1 7.5 12Z" />
+                        </svg>
+                        <h2 class="text-xl font-semibold">3a. Mint LearnToken (ERC-20)</h2>
+                    </div>
+                    <p class="description text-stone-400">
+                        Token (tiền mã hóa) được tạo ra và gửi về ví của sinh viên.
+                        <br><strong>Utility:</strong> Dùng để vote, đổi voucher, staking.
+                    </p>
+                </div>
+
+                <!-- NODE 3B: MINT NFT BADGE -->
+                <div id="node-nft" class="node node-inactive w-full max-w-sm p-6 rounded-xl shadow-lg text-center">
+                    <div class="flex items-center justify-center gap-4">
+                        <svg class="w-8 h-8 text-amber-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 20.25h-13.5A2.25 2.25 0 0 1 3 18V6a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 6v12a2.25 2.25 0 0 1-2.25 2.25Z" />
+                        </svg>
+                        <h2 class="text-xl font-semibold">3b. Mint NFT Badge (Soulbound)</h2>
+                    </div>
+                    <p class="description text-stone-400">
+                        Với thành tích lớn, một NFT (chứng chỉ số) được tạo. Nó là "Soulbound" - gắn liền với ví, không thể bán.
+                        <br><strong>Utility:</strong> Chứng nhận thành tích vĩnh viễn.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NODE 4: DAO GOVERNANCE -->
+        <div id="node-dao" class="node node-inactive w-full max-w-md p-6 rounded-xl shadow-lg text-center" style="top: 830px; position: absolute;">
+            <div class="flex items-center justify-center gap-4">
+                <svg class="w-8 h-8 text-amber-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m-4.682 2.72a3 3 0 0 1-4.682-2.72c.988.343 2.054.52 3.16.58A9.064 9.064 0 0 1 12 18.72Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m12 15.75c0 .412.02.816.048 1.211a9.07 9.07 0 0 1-3.16.58A3 3 0 0 1 4.5 15.32l.006-.004a3 3 0 0 1 4.682-2.72 9.094 9.094 0 0 0 3.741-.479Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c1.668 0 3.235.39 4.682 1.075a3 3 0 1 1-9.364 0A10.523 10.523 0 0 1 12 3Z" />
+                </svg>
+                <h2 class="text-2xl font-semibold">4. Sẵn Sàng Cho DAO Governance</h2>
+            </div>
+            <p class="description text-stone-400">
+                LearnToken và NFT đã có trong ví. Sinh viên bây giờ có thể dùng chúng để tham gia quản trị.
+                <br><strong>Hành động:</strong> Vote duyệt quỹ học bổng, vote mở ngành mới, vote chi cho CLB...
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // Lấy các element DOM
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+        
+        const nodes = {
+            ai: document.getElementById('node-ai'),
+            contract: document.getElementById('node-contract'),
+            token: document.getElementById('node-token'),
+            nft: document.getElementById('node-nft'),
+            dao: document.getElementById('node-dao')
+        };
+
+        const packets = {
+            aiContract: document.getElementById('packet-ai-contract'),
+            contractLeft: document.getElementById('packet-contract-split-left'),
+            contractRight: document.getElementById('packet-contract-split-right'),
+            leftDao: document.getElementById('packet-split-left-dao'),
+            rightDao: document.getElementById('packet-split-right-dao')
+        };
+
+        const allNodes = Object.values(nodes);
+        const allPackets = Object.values(packets);
+
+        // Hàm sleep để tạo độ trễ
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Hàm kích hoạt một node
+        function activateNode(node) {
+            node.classList.remove('node-inactive');
+            node.classList.add('node-active');
+        }
+
+        // Hàm reset demo
+        function resetDemo() {
+            allNodes.forEach(node => {
+                node.classList.add('node-inactive');
+                node.classList.remove('node-active');
+            });
+            
+            allPackets.forEach(packet => {
+                packet.className = 'data-packet'; // Reset tất cả class animation
+                packet.style.opacity = 0; // Đảm bảo nó ẩn
+            });
+
+            startButton.disabled = false;
+            resetButton.disabled = true;
+            resetButton.classList.add('opacity-50');
+            startButton.classList.remove('opacity-50');
+        }
+
+        // Hàm chạy demo
+        async function startDemo() {
+            // Vô hiệu hóa nút
+            startButton.disabled = true;
+            resetButton.disabled = false;
+            startButton.classList.add('opacity-50');
+            resetButton.classList.remove('opacity-50');
+
+            // 1. Bắt đầu từ AI
+            activateNode(nodes.ai);
+            packets.aiContract.classList.add('animate-ai-to-contract');
+            await sleep(2000); // 2 giây cho animation
+
+            // 2. Tới Smart Contract
+            packets.aiContract.style.opacity = 0; // Ẩn packet cũ
+            activateNode(nodes.contract);
+            
+            // Tách nhánh
+            packets.contractLeft.classList.add('animate-contract-to-split-left');
+            packets.contractRight.classList.add('animate-contract-to-split-right');
+            await sleep(2000);
+
+            // 3. Tới 2 node Mint
+            packets.contractLeft.style.opacity = 0;
+            packets.contractRight.style.opacity = 0;
+            activateNode(nodes.token);
+            activateNode(nodes.nft);
+
+            // Hội tụ về DAO
+            packets.leftDao.classList.add('animate-split-left-to-dao');
+            packets.rightDao.classList.add('animate-split-right-to-dao');
+            await sleep(2000);
+
+            // 4. Tới DAO
+            packets.leftDao.style.opacity = 0;
+            packets.rightDao.style.opacity = 0;
+            activateNode(nodes.dao);
+            
+            // Demo hoàn tất
+        }
+
+        // Gán sự kiện
+        startButton.addEventListener('click', startDemo);
+        resetButton.addEventListener('click', resetDemo);
+
+        // Khởi tạo trạng thái ban đầu
+        resetDemo();
+        // Kích hoạt node đầu tiên để làm mồi
+        nodes.ai.classList.remove('node-inactive');
+
+    </script>
+
+</body>
+</html>

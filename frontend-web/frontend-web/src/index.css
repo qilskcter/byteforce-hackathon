@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    --primary: 210 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    
+    --primary-light: 210 100% 95%;
+    --primary-dark: 210 100% 35%;
+
+    --secondary: 150 40% 45%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 150 40% 95%;
+
+    --success: 142 71% 45%;
+    --success-light: 142 71% 95%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-light: 38 92% 95%;
+
+    --muted: 210 20% 92%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 210 100% 97%;
+    --accent-foreground: 210 100% 45%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 210 100% 45%;
+
+    --radius: 0.75rem;
+
+    --gradient-primary: linear-gradient(135deg, hsl(210, 100%, 45%), hsl(210, 100%, 55%));
+    --gradient-secondary: linear-gradient(135deg, hsl(150, 40%, 45%), hsl(150, 40%, 55%));
+    --gradient-edu: linear-gradient(135deg, hsl(210, 100%, 45%), hsl(150, 40%, 45%));
+    
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 215 25% 15%;
+    --foreground: 210 20% 98%;
+
+    --card: 215 25% 18%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 215 25% 18%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 210 100% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 150 40% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --muted: 215 25% 22%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 215 25% 22%;
+    --accent-foreground: 210 100% 55%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 210 100% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glow-primary {
+    box-shadow: var(--neon-glow);
+  }
+  
+  .animate-count-up {
+    animation: count-up 0.5s ease-out;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+  
+  .animate-typing {
+    overflow: hidden;
+    border-right: 2px solid hsl(var(--primary));
+    white-space: nowrap;
+    animation: typing 2s steps(40, end), blink-caret 0.75s step-end infinite;
+  }
+}
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px hsla(239, 84%, 60%, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px hsla(239, 84%, 60%, 0.6), 0 0 30px hsla(239, 84%, 60%, 0.3);
+  }
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink-caret {
+  from, to {
+    border-color: transparent;
+  }
+  50% {
+    border-color: hsl(var(--primary));
+  }
+}
